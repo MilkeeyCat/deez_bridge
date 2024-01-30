@@ -1,17 +1,19 @@
-package irc
+package bridge
 
 import (
 	"fmt"
 	"os"
 
 	"github.com/whyrusleeping/hellabot"
+	"gopkg.in/sorcix/irc.v2"
 )
 
-type BridgeIrc struct {
-	bot *hbot.Bot
+type Irc struct {
+	bot     *hbot.Bot
+	discord *Discord
 }
 
-func NewIrcBridge() BridgeIrc {
+func NewIrcBridge() Irc {
 	host := os.Getenv("IRC_SERVER_HOST")
 	port := os.Getenv("IRC_SERVER_PORT")
 	nickname := os.Getenv("IRC_NICKNAME")
@@ -24,23 +26,35 @@ func NewIrcBridge() BridgeIrc {
 		panic(err)
 	}
 
-	bot.AddTrigger(hbot.Trigger{
+	return Irc{
+		bot,
+		nil,
+	}
+}
+
+func (i *Irc) setDiscord(discord *Discord) {
+	i.discord = discord
+}
+
+func (i *Irc) Setup() {
+	i.bot.AddTrigger(hbot.Trigger{
 		Condition: func(bot *hbot.Bot, msg *hbot.Message) bool {
-			return true
+			return msg.Command == irc.PRIVMSG
 		},
 		Action: func(bot *hbot.Bot, msg *hbot.Message) bool {
-            bot.Reply(msg, "reply :)")
+			fmt.Println(msg)
+			i.discord.sendMessage(msg.Content)
 
 			return true
 		},
 	})
-
-	return BridgeIrc{
-		bot: bot,
-	}
 }
 
-func (bridge BridgeIrc) Run() {
-    fmt.Println("irc bot is up")
-	bridge.bot.Run()
+func (i *Irc) Run() {
+	fmt.Println("irc bot is up")
+	i.bot.Run()
+}
+
+func (i *Irc) sendMessage(msg string) {
+	i.bot.Msg("#dev", msg)
 }

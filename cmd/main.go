@@ -1,18 +1,17 @@
 package main
 
 import (
-	"sync"
+	"fmt"
 
-	"github.com/MilkeeyCat/deez_bridge/internal/bridge"
+	bridge "github.com/MilkeeyCat/deez_bridge/internal"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	godotenv.Load(".dev.env", ".env")
-	var wg sync.WaitGroup
 
 	bridge := bridge.NewBridge()
-	bridge.Run(&wg)
+	bridge.Run()
 
-	wg.Wait()
+    fmt.Println("leaving...")
 }
