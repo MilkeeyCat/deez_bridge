@@ -1,0 +1,4 @@
+tmp
+.dev.env
+ircd.yml
+docker-compose.yml
