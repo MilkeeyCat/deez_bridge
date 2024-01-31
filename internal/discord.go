@@ -9,6 +9,7 @@ import (
 )
 
 var channelId string
+var guildId string
 
 type Discord struct {
 	bot *discordgo.Session
@@ -16,6 +17,7 @@ type Discord struct {
 }
 
 func NewDiscordBridge() Discord {
+	guildId = os.Getenv("DISCORD_BOT_GUILD_ID")
 	channelId = os.Getenv("DISCORD_BOT_CHANNEL_ID")
 	token := os.Getenv("DISCORD_BOT_TOKEN")
 
@@ -36,8 +38,8 @@ func (d *Discord) setIrc(irc *Irc) {
 
 func (d *Discord) Setup() {
 	d.bot.AddHandler(func(discord *discordgo.Session, message *discordgo.MessageCreate) {
-		if discord.State.User.ID != message.Author.ID {
-			d.irc.sendMessage(message.Content)
+		if discord.State.User.ID != message.Author.ID && message.ChannelID == channelId {
+			d.irc.sendMessage(message.Author.Username, message.Content)
 		}
 	})
 }
@@ -58,9 +60,8 @@ func (b *Discord) Run() {
 	<-c
 }
 
-func (d *Discord) sendMessage(msg string) {
-	fmt.Println(channelId)
-	_, err := d.bot.ChannelMessageSend(channelId, msg)
+func (d *Discord) sendMessage(author, msg string) {
+	_, err := d.bot.ChannelMessageSend(channelId, fmt.Sprintf("<%s> %s", author, msg))
 	if err != nil {
 		fmt.Println(err)
 		return

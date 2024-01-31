@@ -13,11 +13,13 @@ type Irc struct {
 	discord *Discord
 }
 
+var channel string
+
 func NewIrcBridge() Irc {
 	host := os.Getenv("IRC_SERVER_HOST")
 	port := os.Getenv("IRC_SERVER_PORT")
 	nickname := os.Getenv("IRC_NICKNAME")
-	channel := os.Getenv("IRC_CHANNEL")
+	channel = os.Getenv("IRC_CHANNEL")
 
 	bot, err := hbot.NewBot(fmt.Sprintf("%s:%s", host, port), nickname, func(bot *hbot.Bot) {
 		bot.Channels = []string{channel}
@@ -42,8 +44,7 @@ func (i *Irc) Setup() {
 			return msg.Command == irc.PRIVMSG
 		},
 		Action: func(bot *hbot.Bot, msg *hbot.Message) bool {
-			fmt.Println(msg)
-			i.discord.sendMessage(msg.Content)
+			i.discord.sendMessage(msg.Name, msg.Content)
 
 			return true
 		},
@@ -55,6 +56,6 @@ func (i *Irc) Run() {
 	i.bot.Run()
 }
 
-func (i *Irc) sendMessage(msg string) {
-	i.bot.Msg("#dev", msg)
+func (i *Irc) sendMessage(author, msg string) {
+	i.bot.Msg(channel, fmt.Sprintf("<%s> %s", author, msg))
 }
