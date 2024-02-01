@@ -9,13 +9,14 @@ import (
 )
 
 type Irc struct {
-	bot     *hbot.Bot
-	discord *Discord
+	bot      *hbot.Bot
+	discord  *Discord
+	messages *MessagesMap
 }
 
 var channel string
 
-func NewIrcBridge() Irc {
+func NewIrcBridge(messages *MessagesMap) Irc {
 	host := os.Getenv("IRC_SERVER_HOST")
 	port := os.Getenv("IRC_SERVER_PORT")
 	nickname := os.Getenv("IRC_NICKNAME")
@@ -31,6 +32,7 @@ func NewIrcBridge() Irc {
 	return Irc{
 		bot,
 		nil,
+		messages,
 	}
 }
 
@@ -44,7 +46,11 @@ func (i *Irc) Setup() {
 			return msg.Command == irc.PRIVMSG
 		},
 		Action: func(bot *hbot.Bot, msg *hbot.Message) bool {
-			i.discord.sendMessage(msg.Name, msg.Content)
+			author := msg.Name
+			content := msg.Content
+
+			i.messages.push(author, content)
+			i.discord.sendMessage(author, fmt.Sprintf("<%s> %s", author, content))
 
 			return true
 		},
@@ -57,5 +63,5 @@ func (i *Irc) Run() {
 }
 
 func (i *Irc) sendMessage(author, msg string) {
-	i.bot.Msg(channel, fmt.Sprintf("<%s> %s", author, msg))
+	i.bot.Msg(channel, msg)
 }

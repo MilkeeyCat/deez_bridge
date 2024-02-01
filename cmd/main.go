@@ -13,5 +13,5 @@ func main() {
 	bridge := bridge.NewBridge()
 	bridge.Run()
 
-    fmt.Println("leaving...")
+	fmt.Println("leaving...")
 }

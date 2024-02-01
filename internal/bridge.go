@@ -8,8 +8,9 @@ type Bridge struct {
 }
 
 func NewBridge() Bridge {
-	irc := NewIrcBridge()
-	discord := NewDiscordBridge()
+	messages := make(MessagesMap)
+	irc := NewIrcBridge(&messages)
+	discord := NewDiscordBridge(&messages)
 
 	irc.setDiscord(&discord)
 	discord.setIrc(&irc)
