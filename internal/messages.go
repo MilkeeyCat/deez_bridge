@@ -2,25 +2,40 @@ package bridge
 
 import "strings"
 
-type MessagesMap map[string][]string
+type Message struct {
+	messageId string
+	content   string
+}
 
-func (mm *MessagesMap) push(author, msg string) {
+type MessagesMap map[string][]Message
+
+func (mm *MessagesMap) push(author string, msg Message) {
 	userMessages := (*mm)[author]
 
 	userMessages = append(userMessages, msg)
 	(*mm)[author] = userMessages
 }
 
-func (mm *MessagesMap) find(user, msg string) int32 {
+func (mm *MessagesMap) find(user, messageId string) int32 {
 	msgs := (*mm)[user]
 
 	for i := range msgs {
-		if msgs[i] == msg {
+		if msgs[i].messageId == messageId {
 			return int32(len(msgs) - i)
 		}
 	}
 
 	return -1
+}
+
+func (mm *MessagesMap) findByOffset(user string, offset uint32) *Message {
+	msgs := (*mm)[user]
+
+	if len(msgs) >= int(offset) {
+		return &msgs[len(msgs)-int(offset)]
+	}
+
+	return nil
 }
 
 func MessageContent(msg string) string {

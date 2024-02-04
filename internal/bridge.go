@@ -1,38 +1,31 @@
 package bridge
 
-import "sync"
-
 type Bridge struct {
-	irc     *Irc
-	discord *Discord
+	irc      *Irc
+	discord  *Discord
+	messages *MessagesMap
 }
 
 func NewBridge() Bridge {
-	messages := make(MessagesMap)
-	irc := NewIrcBridge(&messages)
-	discord := NewDiscordBridge(&messages)
-
-	irc.setDiscord(&discord)
-	discord.setIrc(&irc)
-
-	irc.Setup()
-	discord.Setup()
-
-	return Bridge{
-		irc:     &irc,
-		discord: &discord,
+    messagesMap := make(MessagesMap)
+	bridge := Bridge{
+		irc:      nil,
+		discord:  nil,
+		messages: &messagesMap,
 	}
+
+	bridge.irc = NewIrcBridge(&bridge)
+	bridge.discord = NewDiscordBridge(&bridge)
+
+	return bridge
 }
 
-func (b *Bridge) Run() {
-	var wg sync.WaitGroup
+func (b *Bridge) Open() {
+	b.irc.Open()
+	b.discord.Open()
+}
 
-	go b.discord.Run()
-	wg.Add(1)
-
-	go b.irc.Run()
-	wg.Add(1)
-
-	// where am i even supposed to call wg.Done()? xd
-	wg.Wait()
+func (b *Bridge) Close() {
+	b.irc.Close()
+	b.discord.Close()
 }
