@@ -71,34 +71,17 @@ func (i *Irc) onMessage(event *irc.Event) {
 }
 
 func (i *Irc) onReply(event *irc.Event) {
+    //TODO: add error handling
 	message := event.Message()
-	username := ""
-	content := ""
-	offset := 0
-	j := 0
-
-	for a := 7; a < len(message)-1; a++ {
-		if message[a] == '~' {
-			username = message[7:a]
-			j = a + 1
-
-			break
-		}
-	}
-
-	for b := j; b < len(message)-1; b++ {
-		if message[b] == ' ' {
-			i, err := strconv.Atoi(message[j:b])
-			if err != nil {
-				fmt.Println("failed to convert string into a number: %w", err)
-				return
-			}
-
-			offset = i
-			content = message[b+1:]
-		}
+	vals := strings.SplitN(message, " ", 3)
+	str := strings.Split(vals[1], "~")
+	username := str[0]
+	content := vals[2]
+	offset, err := strconv.Atoi(str[1])
+	if err != nil {
+		fmt.Printf("failed to convert string '%s' into int", str[1])
+		return
 	}
 
 	i.bridge.discord.replyToMessage(username, content, int32(offset))
-
 }

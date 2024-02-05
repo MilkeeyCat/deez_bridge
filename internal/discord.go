@@ -107,7 +107,7 @@ func (d *Discord) replyToMessage(username string, content string, offset int32) 
 	message := d.bridge.messages.findByOffset(username, uint32(offset))
 
 	if message != nil {
-		message, err := d.bot.ChannelMessageSendReply(channelId, content, &discordgo.MessageReference{
+		message, err := d.bot.ChannelMessageSendReply(channelId, fmt.Sprintf("<%s> %s", username, content), &discordgo.MessageReference{
 			MessageID: message.messageId,
 			ChannelID: channelId,
 			GuildID:   guildId,
