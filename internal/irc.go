@@ -71,7 +71,7 @@ func (i *Irc) onMessage(event *irc.Event) {
 }
 
 func (i *Irc) onReply(event *irc.Event) {
-    //TODO: add error handling
+	//TODO: add error handling
 	message := event.Message()
 	vals := strings.SplitN(message, " ", 3)
 	str := strings.Split(vals[1], "~")
@@ -83,5 +83,5 @@ func (i *Irc) onReply(event *irc.Event) {
 		return
 	}
 
-	i.bridge.discord.replyToMessage(username, content, int32(offset))
+	i.bridge.discord.replyToMessage(username, event.Nick, content, int32(offset))
 }
