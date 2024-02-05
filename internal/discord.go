@@ -31,6 +31,8 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 	}
 
 	bot.AddHandler(discord.onMessage)
+	bot.AddHandler(discord.onReactionAdd)
+	bot.AddHandler(discord.onReactionRemove)
 
 	return discord
 }
@@ -122,4 +124,50 @@ func (d *Discord) replyToMessage(username string, author string, content string,
 			messageId: message.ID,
 		})
 	}
+}
+
+func (d *Discord) onReactionAdd(session *discordgo.Session, reaction *discordgo.MessageReactionAdd) {
+	emojiName := reaction.Emoji.Name
+	from := reaction.Member.User.Username
+	to := ""
+	msg, err := session.ChannelMessage(channelId, reaction.MessageID)
+	if err != nil {
+		fmt.Printf("failed to get message: %s", err)
+	}
+
+	if session.State.User.ID == msg.Author.ID {
+		to = MessageAuthor(msg.Content)
+	} else {
+		to = msg.Author.Username
+	}
+
+	messageId := d.bridge.messages.find(to, reaction.MessageID)
+	content := fmt.Sprintf("%s reacted with %s to %s~%d", from, emojiName, to, messageId)
+
+	d.bridge.irc.sendMessage(content)
+}
+
+func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discordgo.MessageReactionRemove) {
+	emojiName := reaction.Emoji.Name
+	user, err := session.User(reaction.UserID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	from := user.Username
+	to := ""
+	msg, err := session.ChannelMessage(channelId, reaction.MessageID)
+	if err != nil {
+		fmt.Printf("failed to get message: %s", err)
+	}
+
+	if session.State.User.ID == msg.Author.ID {
+		to = MessageAuthor(msg.Content)
+	} else {
+		to = msg.Author.Username
+	}
+
+	messageId := d.bridge.messages.find(to, reaction.MessageID)
+	content := fmt.Sprintf("%s removed reaction %s from %s~%d", from, emojiName, to, messageId)
+
+	d.bridge.irc.sendMessage(content)
 }
