@@ -30,3 +30,10 @@ You can see when someone reacts to your and others messages. When someone will r
 
 When someone will remove a reaction from a message it will look like <br/>
 `who_removed_reaction removed reaction emoji_name from message_author~offset`
+
+#### Deleting messages
+You know how it happens, you are giga chad who doesn't use closed source pojects, only irc, only big dict energy.
+But since we are all humans, we are prone to speak about worst takes ever. For example you were talking with your homies
+about your favorite programming language and you say that dynamically typed languages are better then statically typed.
+If I were you Id quickly hit `!del offset` where `offset` is number of your cringe take message from end.
+So when they will call others to laugh at you(they think if you are irc user you cant delete messages) you will make them fools
