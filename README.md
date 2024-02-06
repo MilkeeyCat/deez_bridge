@@ -14,7 +14,7 @@ go build -o main cmd/main.go
 ![Irc replies](images/irc_replies.jpg) <br/>
 You can also reply from irc to a discord user's message, like so `!reply username~offset`, offset means user's nth last message.
 If you want to reply to last message it's 1, pre last - 2, etc... When irc part of bridge wont be able to find a message others are replying to `offset` will be `-1`<br/>
-![Discord reply](discord_reply_from_irc.jpg) <br/>
+![Discord reply](images/discord_reply_from_irc.jpg) <br/>
 ![Irc reply](images/irc_reply.jpg) <br/>
 
 #### Updated massages.
