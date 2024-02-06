@@ -60,6 +60,8 @@ func (i *Irc) onMessage(event *irc.Event) {
 	//TODO: make it better
 	if strings.HasPrefix(event.Message(), "!reply") {
 		i.onReply(event)
+	} else if strings.HasPrefix(event.Message(), "!del") {
+		i.onDelete(event)
 	} else {
 		author := event.Nick
 		content := event.Message()
@@ -84,4 +86,17 @@ func (i *Irc) onReply(event *irc.Event) {
 	}
 
 	i.bridge.discord.replyToMessage(username, event.Nick, content, int32(offset))
+}
+
+func (i *Irc) onDelete(event *irc.Event) {
+	//TOOD: add error handling
+	message := event.Message()
+	vals := strings.Split(message, " ")
+	offset, err := strconv.Atoi(vals[1])
+	if err != nil {
+		fmt.Printf("failed to convert string '%s' into int", vals[1])
+		return
+	}
+
+	i.bridge.discord.deleteMessage(event.Nick, offset)
 }

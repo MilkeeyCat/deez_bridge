@@ -132,7 +132,7 @@ func (d *Discord) onEdit(session *discordgo.Session, message *discordgo.MessageU
 	content := message.Content
 	offset := d.bridge.messages.find(author, message.ID)
 
-    d.bridge.messages.update(message.ID, author, content)
+	d.bridge.messages.update(message.ID, author, content)
 	d.bridge.irc.sendMessage(fmt.Sprintf("<%s~%d> %s", author, offset, content))
 }
 
@@ -180,4 +180,15 @@ func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discord
 	content := fmt.Sprintf("%s removed reaction %s from %s~%d", from, emojiName, to, messageId)
 
 	d.bridge.irc.sendMessage(content)
+}
+
+func (d *Discord) deleteMessage(name string, offset int) {
+	message := d.bridge.messages.findByOffset(name, uint32(offset))
+	if message == nil {
+		fmt.Println("failed to find message")
+		return
+	}
+
+	d.bot.ChannelMessageDelete(channelId, message.messageId)
+	d.bridge.messages.delete(name, message.messageId)
 }
