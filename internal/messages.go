@@ -28,6 +28,17 @@ func (mm *MessagesMap) find(user, messageId string) int32 {
 	return -1
 }
 
+func (mm *MessagesMap) update(messageId, user, msg string) {
+	msgs := (*mm)[user]
+
+	for i := range msgs {
+		if msgs[i].messageId == messageId {
+			(*mm)[user][i].content = msg
+		}
+	}
+
+}
+
 func (mm *MessagesMap) findByOffset(user string, offset uint32) *Message {
 	msgs := (*mm)[user]
 

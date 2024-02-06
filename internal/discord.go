@@ -31,6 +31,7 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 	}
 
 	bot.AddHandler(discord.onMessage)
+	bot.AddHandler(discord.onEdit)
 	bot.AddHandler(discord.onReactionAdd)
 	bot.AddHandler(discord.onReactionRemove)
 
@@ -124,6 +125,15 @@ func (d *Discord) replyToMessage(username string, author string, content string,
 			messageId: message.ID,
 		})
 	}
+}
+
+func (d *Discord) onEdit(session *discordgo.Session, message *discordgo.MessageUpdate) {
+	author := message.Author.Username
+	content := message.Content
+	offset := d.bridge.messages.find(author, message.ID)
+
+    d.bridge.messages.update(message.ID, author, content)
+	d.bridge.irc.sendMessage(fmt.Sprintf("<%s~%d> %s", author, offset, content))
 }
 
 func (d *Discord) onReactionAdd(session *discordgo.Session, reaction *discordgo.MessageReactionAdd) {
