@@ -21,7 +21,7 @@ func SetupLogger(filename string) {
 	}
 
 	if env == "prod" {
-		file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE, 0644)
+		file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			panic(fmt.Errorf("failed to open log file: %w", err))
 		}
