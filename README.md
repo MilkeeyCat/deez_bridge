@@ -37,3 +37,6 @@ But since we are all humans, we are prone to speak about worst takes ever. For e
 about your favorite programming language and you say that dynamically typed languages are better then statically typed.
 If I were you Id quickly hit `!del offset` where `offset` is number of your cringe take message from end.
 So when they will call others to laugh at you(they think if you are irc user you cant delete messages) you will make them fools
+
+#### Pinging discord users
+You can do this the same way as in discord, just write `@username`
