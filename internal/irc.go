@@ -73,7 +73,6 @@ func (i *Irc) onMessage(event *irc.Event) {
 }
 
 func (i *Irc) onReply(event *irc.Event) {
-	//TODO: add error handling
 	message := event.Message()
 	vals := strings.SplitN(message, " ", 3)
 	if len(vals) != 3 {

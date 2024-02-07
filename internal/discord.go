@@ -3,17 +3,22 @@ package bridge
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/MilkeeyCat/deez_bridge/internal/logger"
 	"github.com/bwmarrin/discordgo"
 )
 
-var channelId string
-var guildId string
+var (
+	channelId string
+	guildId   string
+)
 
 type Discord struct {
-	bot    *discordgo.Session
-	bridge *Bridge
+	bot           *discordgo.Session
+	bridge        *Bridge
+	nickMemberMap map[string]*discordgo.Member
 }
 
 func NewDiscordBridge(bridge *Bridge) *Discord {
@@ -27,8 +32,9 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 	}
 
 	discord := &Discord{
-		bot,
-		bridge,
+		bot:           bot,
+		bridge:        bridge,
+		nickMemberMap: make(map[string]*discordgo.Member),
 	}
 
 	bot.AddHandler(discord.onMessage)
@@ -46,6 +52,24 @@ func (d *Discord) Open() {
 	}
 
 	logger.Logger.Info("discord connection established")
+
+	members, err := d.bot.GuildMembers(guildId, "", 1000)
+	if err != nil {
+		logger.Fatal(fmt.Sprintf("Error obtaining server members: %v", err.Error()))
+	}
+
+	for _, member := range members {
+		if member == nil {
+			logger.Logger.Warn("Skipping missing information for a user.")
+			continue
+		}
+
+		d.nickMemberMap[member.User.Username] = member
+		if member.Nick != "" {
+			d.nickMemberMap[member.Nick] = member
+		}
+	}
+
 }
 
 func (d *Discord) Close() {
@@ -56,6 +80,7 @@ func (d *Discord) Close() {
 }
 
 func (d *Discord) sendMessage(message string) {
+	message = d.replaceUserMentions(message)
 	msg, err := d.bot.ChannelMessageSend(channelId, message)
 	if err != nil {
 		logger.Logger.Error("error occurred during sending message", "err", err)
@@ -196,4 +221,21 @@ func (d *Discord) deleteMessage(name string, offset int) {
 
 	d.bot.ChannelMessageDelete(channelId, message.messageId)
 	d.bridge.messages.delete(name, message.messageId)
+}
+
+var userMentionRE = regexp.MustCompile("@[^@\n ]{1,32}")
+
+func (d *Discord) replaceUserMentions(content string) string {
+	fn := func(match string) string {
+		username := match[1:]
+		member := d.nickMemberMap[username]
+
+		if member == nil {
+			return match
+		}
+
+		return strings.Replace(match, "@"+username, member.User.Mention(), 1)
+	}
+
+	return userMentionRE.ReplaceAllStringFunc(content, fn)
 }
