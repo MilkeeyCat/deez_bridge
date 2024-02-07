@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 
 	bridge "github.com/MilkeeyCat/deez_bridge/internal"
+	"github.com/MilkeeyCat/deez_bridge/internal/logger"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	godotenv.Load(".dev.env", ".env")
+	logger.SetupLogger("./mumbo_jumbo.logs")
 
 	bridge := bridge.NewBridge()
 	bridge.Open()
@@ -19,6 +20,6 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 
-	fmt.Println("leaving ...")
+	logger.Logger.Info("exiting...")
 	bridge.Close()
 }

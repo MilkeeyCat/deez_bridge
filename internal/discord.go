@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/MilkeeyCat/deez_bridge/internal/logger"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -22,7 +23,7 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 
 	bot, err := discordgo.New("Bot " + token)
 	if err != nil {
-		panic(err)
+		logger.Logger.Error(err.Error())
 	}
 
 	discord := &Discord{
@@ -41,22 +42,23 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 func (d *Discord) Open() {
 	err := d.bot.Open()
 	if err != nil {
-		panic(err)
+		logger.Fatal(fmt.Sprintf("failed to connect to discord: %v", err))
 	}
-	fmt.Println("discord connection established")
+
+	logger.Logger.Info("discord connection established")
 }
 
 func (d *Discord) Close() {
 	err := d.bot.Close()
 	if err != nil {
-		panic(err)
+		logger.Logger.Error(err.Error())
 	}
 }
 
 func (d *Discord) sendMessage(message string) {
 	msg, err := d.bot.ChannelMessageSend(channelId, message)
 	if err != nil {
-		fmt.Println("error occurred during sending message: %w", err)
+		logger.Logger.Error("error occurred during sending message", "err", err)
 	}
 
 	d.bridge.messages.push(MessageAuthor(message), Message{
@@ -96,7 +98,6 @@ func (d *Discord) onReply(session *discordgo.Session, message *discordgo.Message
 	}
 
 	messageId := d.bridge.messages.find(to, repliedMessage.ID)
-
 	msg := fmt.Sprintf("<%s %s~%d> %s", from, to, messageId, content)
 
 	d.bridge.irc.sendMessage(msg)
@@ -117,7 +118,8 @@ func (d *Discord) replyToMessage(username string, author string, content string,
 		})
 
 		if err != nil {
-			fmt.Println("failed to reply to a message: %w", err)
+			logger.Logger.Info("failed to reply to a message", "err", err)
+			return
 		}
 
 		d.bridge.messages.push(username, Message{
@@ -142,7 +144,8 @@ func (d *Discord) onReactionAdd(session *discordgo.Session, reaction *discordgo.
 	to := ""
 	msg, err := session.ChannelMessage(channelId, reaction.MessageID)
 	if err != nil {
-		fmt.Printf("failed to get message: %s", err)
+		logger.Logger.Warn("failed to find message", "err", err)
+		return
 	}
 
 	if session.State.User.ID == msg.Author.ID {
@@ -161,13 +164,15 @@ func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discord
 	emojiName := reaction.Emoji.Name
 	user, err := session.User(reaction.UserID)
 	if err != nil {
-		fmt.Println(err)
+		logger.Logger.Warn("failed to find user", "err", err)
+		return
 	}
 	from := user.Username
 	to := ""
 	msg, err := session.ChannelMessage(channelId, reaction.MessageID)
 	if err != nil {
-		fmt.Printf("failed to get message: %s", err)
+		logger.Logger.Warn("failed to get message", "err", err)
+		return
 	}
 
 	if session.State.User.ID == msg.Author.ID {
@@ -185,7 +190,7 @@ func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discord
 func (d *Discord) deleteMessage(name string, offset int) {
 	message := d.bridge.messages.findByOffset(name, uint32(offset))
 	if message == nil {
-		fmt.Println("failed to find message")
+		logger.Logger.Warn("failed to find message")
 		return
 	}
 
