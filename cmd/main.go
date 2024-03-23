@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/signal"
 
-	bridge "github.com/MilkeeyCat/deez_bridge/internal"
+	"github.com/MilkeeyCat/deez_bridge/internal/bridge"
 	"github.com/MilkeeyCat/deez_bridge/internal/logger"
 	"github.com/joho/godotenv"
 )

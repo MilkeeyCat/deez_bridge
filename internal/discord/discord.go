@@ -1,4 +1,4 @@
-package bridge
+package discord
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MilkeeyCat/deez_bridge/internal/logger"
+	"github.com/MilkeeyCat/deez_bridge/internal/message"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -17,11 +18,12 @@ var (
 
 type Discord struct {
 	bot           *discordgo.Session
-	bridge        *Bridge
 	nickMemberMap map[string]*discordgo.Member
+	messages      Messages
+	message       chan message.Message
 }
 
-func NewDiscordBridge(bridge *Bridge) *Discord {
+func NewDiscord(messageChan chan message.Message) Discord {
 	guildId = os.Getenv("DISCORD_BOT_GUILD_ID")
 	channelId = os.Getenv("DISCORD_BOT_CHANNEL_ID")
 	token := os.Getenv("DISCORD_BOT_TOKEN")
@@ -31,10 +33,13 @@ func NewDiscordBridge(bridge *Bridge) *Discord {
 		logger.Logger.Error(err.Error())
 	}
 
-	discord := &Discord{
+	discord := Discord{
 		bot:           bot,
-		bridge:        bridge,
 		nickMemberMap: make(map[string]*discordgo.Member),
+		messages: Messages{
+			messages: make(MessagesMap),
+		},
+		message: messageChan,
 	}
 
 	bot.AddHandler(discord.onMessage)
@@ -69,13 +74,25 @@ func (d *Discord) Open() {
 			d.nickMemberMap[member.Nick] = member
 		}
 	}
-
 }
 
 func (d *Discord) Close() {
 	err := d.bot.Close()
 	if err != nil {
 		logger.Logger.Error(err.Error())
+	}
+}
+
+func (d *Discord) HandleMessage(msg message.Message) {
+	switch msg.Type {
+	case message.TypeDefault:
+		d.sendMessage(fmt.Sprintf("<%s> %s", msg.Author, msg.Text))
+		break
+	case message.TypeReply:
+		d.replyToMessage(msg.Offset.Username, msg.Author, msg.Text, int32(msg.Offset.Offset))
+		break
+	default:
+		logger.Logger.Warn(fmt.Sprintf("unknown message type: %d", msg.Type))
 	}
 }
 
@@ -86,34 +103,35 @@ func (d *Discord) sendMessage(message string) {
 		logger.Logger.Error("error occurred during sending message", "err", err)
 	}
 
-	d.bridge.messages.push(MessageAuthor(message), Message{
+	d.messages.push(MessageAuthor(message), Message{
 		content:   MessageContent(message),
 		messageId: msg.ID,
 	})
 }
 
-func (d *Discord) onMessage(session *discordgo.Session, message *discordgo.MessageCreate) {
-	if session.State.User.ID != message.Author.ID && message.ChannelID == channelId && message.Type == discordgo.MessageTypeDefault {
-		author := message.Author.Username
-		content := message.Content
+func (d *Discord) onMessage(session *discordgo.Session, msg *discordgo.MessageCreate) {
+	if session.State.User.ID != msg.Author.ID && msg.ChannelID == channelId && msg.Type == discordgo.MessageTypeDefault {
+		author := msg.Author.Username
+		content := msg.Content
 
-		msg := fmt.Sprintf("<%s> %s", author, content)
-
-		d.bridge.irc.sendMessage(msg)
-		d.bridge.messages.push(author, Message{
+		d.message <- message.NewMessage(
+			content,
+			author,
+			message.TargetIrc,
+		)
+		d.messages.push(author, Message{
 			content:   content,
-			messageId: message.Message.ID,
+			messageId: msg.Message.ID,
 		})
-
-	} else if session.State.User.ID != message.Author.ID && message.ChannelID == channelId && message.Type == discordgo.MessageTypeReply {
-		d.onReply(session, message)
+	} else if session.State.User.ID != msg.Author.ID && msg.ChannelID == channelId && msg.Type == discordgo.MessageTypeReply {
+		d.onReply(session, msg)
 	}
 }
 
-func (d *Discord) onReply(session *discordgo.Session, message *discordgo.MessageCreate) {
-	repliedMessage := message.ReferencedMessage
-	from := message.Author.Username
-	content := message.Content
+func (d *Discord) onReply(session *discordgo.Session, msg *discordgo.MessageCreate) {
+	repliedMessage := msg.ReferencedMessage
+	from := msg.Author.Username
+	content := msg.Content
 	to := ""
 
 	if session.State.User.ID == repliedMessage.Author.ID {
@@ -122,18 +140,25 @@ func (d *Discord) onReply(session *discordgo.Session, message *discordgo.Message
 		to = repliedMessage.Author.Username
 	}
 
-	messageId := d.bridge.messages.find(to, repliedMessage.ID)
-	msg := fmt.Sprintf("<%s %s~%d> %s", from, to, messageId, content)
+	messageId := d.messages.find(to, repliedMessage.ID)
 
-	d.bridge.irc.sendMessage(msg)
-	d.bridge.messages.push(from, Message{
+	d.message <- message.NewReplyMessage(
+		content,
+		from,
+		message.TargetIrc,
+		message.Offset{
+			Offset:   int(messageId),
+			Username: to,
+		},
+	)
+	d.messages.push(from, Message{
 		content:   content,
-		messageId: message.Message.ID,
+		messageId: msg.Message.ID,
 	})
 }
 
 func (d *Discord) replyToMessage(username string, author string, content string, offset int32) {
-	message := d.bridge.messages.findByOffset(username, uint32(offset))
+	message := d.messages.findByOffset(username, uint32(offset))
 
 	if message != nil {
 		message, err := d.bot.ChannelMessageSendReply(channelId, fmt.Sprintf("<%s> %s", author, content), &discordgo.MessageReference{
@@ -147,20 +172,28 @@ func (d *Discord) replyToMessage(username string, author string, content string,
 			return
 		}
 
-		d.bridge.messages.push(username, Message{
+		d.messages.push(username, Message{
 			content:   content,
 			messageId: message.ID,
 		})
 	}
 }
 
-func (d *Discord) onEdit(session *discordgo.Session, message *discordgo.MessageUpdate) {
-	author := message.Author.Username
-	content := message.Content
-	offset := d.bridge.messages.find(author, message.ID)
+func (d *Discord) onEdit(session *discordgo.Session, msg *discordgo.MessageUpdate) {
+	author := msg.Author.Username
+	content := msg.Content
+	offset := d.messages.find(author, msg.ID)
 
-	d.bridge.messages.update(message.ID, author, content)
-	d.bridge.irc.sendMessage(fmt.Sprintf("<%s~%d> %s", author, offset, content))
+	d.message <- message.NewEditMessage(
+		content,
+		author,
+		message.TargetIrc,
+		message.Offset{
+			Offset:   int(offset),
+			Username: author,
+		},
+	)
+	d.messages.update(msg.ID, author, content)
 }
 
 func (d *Discord) onReactionAdd(session *discordgo.Session, reaction *discordgo.MessageReactionAdd) {
@@ -179,10 +212,19 @@ func (d *Discord) onReactionAdd(session *discordgo.Session, reaction *discordgo.
 		to = msg.Author.Username
 	}
 
-	messageId := d.bridge.messages.find(to, reaction.MessageID)
-	content := fmt.Sprintf("%s reacted with %s to %s~%d", from, emojiName, to, messageId)
+	messageId := d.messages.find(to, reaction.MessageID)
 
-	d.bridge.irc.sendMessage(content)
+	d.message <- message.NewReactMessage(
+		from,
+		message.TargetIrc,
+		message.Offset{
+			Username: to,
+			Offset:   int(messageId),
+		}, message.Reaction{
+			EmojiName: emojiName,
+			Type:      message.ReactionTypeAdded,
+		},
+	)
 }
 
 func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discordgo.MessageReactionRemove) {
@@ -206,21 +248,30 @@ func (d *Discord) onReactionRemove(session *discordgo.Session, reaction *discord
 		to = msg.Author.Username
 	}
 
-	messageId := d.bridge.messages.find(to, reaction.MessageID)
-	content := fmt.Sprintf("%s removed reaction %s from %s~%d", from, emojiName, to, messageId)
+	messageId := d.messages.find(to, reaction.MessageID)
 
-	d.bridge.irc.sendMessage(content)
+	d.message <- message.NewReactMessage(
+		from,
+		message.TargetIrc,
+		message.Offset{
+			Username: to,
+			Offset:   int(messageId),
+		}, message.Reaction{
+			EmojiName: emojiName,
+			Type:      message.ReactionTypeRemoved,
+		},
+	)
 }
 
 func (d *Discord) deleteMessage(name string, offset int) {
-	message := d.bridge.messages.findByOffset(name, uint32(offset))
+	message := d.messages.findByOffset(name, uint32(offset))
 	if message == nil {
 		logger.Logger.Warn("failed to find message")
 		return
 	}
 
 	d.bot.ChannelMessageDelete(channelId, message.messageId)
-	d.bridge.messages.delete(name, message.messageId)
+	d.messages.delete(name, message.messageId)
 }
 
 var userMentionRE = regexp.MustCompile("@[^@\n ]{1,32}")

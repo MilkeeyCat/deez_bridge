@@ -1,4 +1,4 @@
-package bridge
+package discord
 
 import "strings"
 
@@ -9,15 +9,20 @@ type Message struct {
 
 type MessagesMap map[string][]Message
 
-func (mm *MessagesMap) push(author string, msg Message) {
-	userMessages := (*mm)[author]
-
-	userMessages = append(userMessages, msg)
-	(*mm)[author] = userMessages
+type Messages struct {
+	messages MessagesMap
+	maxMsgs  int
 }
 
-func (mm *MessagesMap) find(user, messageId string) int32 {
-	msgs := (*mm)[user]
+func (m *Messages) push(author string, msg Message) {
+	userMessages := m.messages[author]
+
+	userMessages = append(userMessages, msg)
+	m.messages[author] = userMessages
+}
+
+func (m *Messages) find(user, messageId string) int32 {
+	msgs := m.messages[user]
 
 	for i := range msgs {
 		if msgs[i].messageId == messageId {
@@ -28,28 +33,28 @@ func (mm *MessagesMap) find(user, messageId string) int32 {
 	return -1
 }
 
-func (mm *MessagesMap) update(messageId, user, msg string) {
-	msgs := (*mm)[user]
+func (m *Messages) update(messageId, user, msg string) {
+	msgs := m.messages[user]
 
 	for i := range msgs {
 		if msgs[i].messageId == messageId {
-			(*mm)[user][i].content = msg
+			m.messages[user][i].content = msg
 		}
 	}
 }
 
-func (mm *MessagesMap) delete(user, messageId string) {
-	msgs := (*mm)[user]
+func (m *Messages) delete(user, messageId string) {
+	msgs := m.messages[user]
 
 	for i := range msgs {
 		if msgs[i].messageId == messageId {
-			(*mm)[user] = append(msgs[:i], msgs[i+1:]...)
+			m.messages[user] = append(msgs[:i], msgs[i+1:]...)
 		}
 	}
 }
 
-func (mm *MessagesMap) findByOffset(user string, offset uint32) *Message {
-	msgs := (*mm)[user]
+func (m *Messages) findByOffset(user string, offset uint32) *Message {
+	msgs := m.messages[user]
 
 	if len(msgs) >= int(offset) {
 		return &msgs[len(msgs)-int(offset)]
