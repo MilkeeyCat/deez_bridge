@@ -1,27 +1,27 @@
 package message
 
-type Target uint8
+type target uint8
 
 const (
-	TargetDiscord Target = 0
-	TargetIrc     Target = 1
+	TargetDiscord target = iota
+	TargetIrc
 )
 
-type Type uint8
+type _type uint8
 
 const (
-	TypeDefault  Type = 0
-	TypeReply    Type = 1
-	TypeEdit     Type = 2
-	TypeDelete   Type = 3
-	TypeReaction Type = 4
+	TypeDefault _type = iota
+	TypeReply
+	TypeEdit
+	TypeDelete
+	TypeReaction
 )
 
-type ReactionType uint8
+type reactionType uint8
 
 const (
-	ReactionTypeAdded   ReactionType = 0
-	ReactionTypeRemoved ReactionType = 1
+	ReactionTypeAdded reactionType = iota
+	ReactionTypeRemoved
 )
 
 type Offset struct {
@@ -31,19 +31,19 @@ type Offset struct {
 
 type Reaction struct {
 	EmojiName string
-	Type      ReactionType
+	Type      reactionType
 }
 
 type Message struct {
 	Text     string
 	Author   string
-	Target   Target
-	Type     Type
+	Target   target
+	Type     _type
 	Offset   *Offset
 	Reaction *Reaction
 }
 
-func NewMessage(text string, author string, target Target) Message {
+func NewMessage(text string, author string, target target) Message {
 	return Message{
 		Text:   text,
 		Author: author,
@@ -52,7 +52,7 @@ func NewMessage(text string, author string, target Target) Message {
 	}
 }
 
-func NewReplyMessage(text string, Author string, target Target, offset Offset) Message {
+func NewReplyMessage(text string, Author string, target target, offset Offset) Message {
 	return Message{
 		Text:   text,
 		Author: Author,
@@ -62,7 +62,7 @@ func NewReplyMessage(text string, Author string, target Target, offset Offset) M
 	}
 }
 
-func NewEditMessage(text string, author string, target Target, offset Offset) Message {
+func NewEditMessage(text string, author string, target target, offset Offset) Message {
 	return Message{
 		Text:   text,
 		Author: author,
@@ -72,7 +72,7 @@ func NewEditMessage(text string, author string, target Target, offset Offset) Me
 	}
 }
 
-func NewDeleteMessage(text string, author string, target Target, offset Offset) Message {
+func NewDeleteMessage(text string, author string, target target, offset Offset) Message {
 	return Message{
 		Text:   text,
 		Author: author,
@@ -82,7 +82,7 @@ func NewDeleteMessage(text string, author string, target Target, offset Offset) 
 	}
 }
 
-func NewReactMessage(author string, target Target, offset Offset, reaction Reaction) Message {
+func NewReactMessage(author string, target target, offset Offset, reaction Reaction) Message {
 	return Message{
 		Author:   author,
 		Target:   target,
