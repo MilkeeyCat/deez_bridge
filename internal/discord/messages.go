@@ -14,10 +14,27 @@ type Messages struct {
 	maxMsgs  int
 }
 
+/*
+maxMsgs: amount of messages to save per user
+*/
+func NewMessages(maxMsgs int) Messages {
+	return Messages{
+		messages: make(MessagesMap),
+		maxMsgs:  maxMsgs,
+	}
+
+}
+
 func (m *Messages) push(author string, msg Message) {
 	userMessages := m.messages[author]
 
-	userMessages = append(userMessages, msg)
+	if len(userMessages) >= m.maxMsgs && m.maxMsgs != -1 {
+		copy(userMessages, userMessages[1:m.maxMsgs])
+		userMessages[m.maxMsgs-1] = msg
+	} else {
+		userMessages = append(userMessages, msg)
+	}
+
 	m.messages[author] = userMessages
 }
 

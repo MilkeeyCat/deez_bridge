@@ -36,10 +36,8 @@ func NewDiscord(messageChan chan message.Message) Discord {
 	discord := Discord{
 		bot:           bot,
 		nickMemberMap: make(map[string]*discordgo.Member),
-		messages: Messages{
-			messages: make(MessagesMap),
-		},
-		message: messageChan,
+		messages:      NewMessages(512),
+		message:       messageChan,
 	}
 
 	bot.AddHandler(discord.onMessage)
