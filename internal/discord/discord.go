@@ -110,7 +110,10 @@ func (d *Discord) sendMessage(message string) {
 func (d *Discord) onMessage(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	if session.State.User.ID != msg.Author.ID && msg.ChannelID == channelId && msg.Type == discordgo.MessageTypeDefault {
 		author := msg.Author.Username
-		content := msg.Content
+		content, err := msg.ContentWithMoreMentionsReplaced(session)
+		if err != nil {
+			logger.Logger.Error(fmt.Sprintf("failed to parse discord message: %v", err))
+		}
 
 		d.message <- message.NewMessage(
 			content,
