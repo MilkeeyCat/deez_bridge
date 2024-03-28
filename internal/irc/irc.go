@@ -33,6 +33,7 @@ func NewIrc(messageChan chan message.Message) Irc {
 
 	con.AddCallback("001", func(e *irc.Event) {
 		con.Join(channel)
+		logger.Logger.Info("irc connection established")
 	})
 	con.AddCallback("PRIVMSG", ircS.onMessage)
 
@@ -47,8 +48,6 @@ func (i *Irc) Open() {
 	if err != nil {
 		logger.Fatal(fmt.Sprintf("failed connect to irc: %v", err))
 	}
-
-	logger.Logger.Info("irc connection established")
 }
 
 func (i *Irc) Close() {
