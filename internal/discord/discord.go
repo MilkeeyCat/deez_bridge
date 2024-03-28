@@ -114,6 +114,7 @@ func (d *Discord) onMessage(session *discordgo.Session, msg *discordgo.MessageCr
 		if err != nil {
 			logger.Logger.Error(fmt.Sprintf("failed to parse discord message: %v", err))
 		}
+		content = replaceEmotes(content)
 
 		d.message <- message.NewMessage(
 			content,
@@ -275,7 +276,10 @@ func (d *Discord) deleteMessage(name string, offset int) {
 	d.messages.delete(name, message.messageId)
 }
 
-var userMentionRE = regexp.MustCompile("@[^@\n ]{1,32}")
+var (
+	userMentionRE = regexp.MustCompile("@[^@\n ]{1,32}")
+	emoteRE       = regexp.MustCompile(`<a?(:\w+:)\d+>`)
+)
 
 func (d *Discord) replaceUserMentions(content string) string {
 	fn := func(match string) string {
@@ -290,4 +294,8 @@ func (d *Discord) replaceUserMentions(content string) string {
 	}
 
 	return userMentionRE.ReplaceAllStringFunc(content, fn)
+}
+
+func replaceEmotes(text string) string {
+	return emoteRE.ReplaceAllString(text, "$1")
 }
