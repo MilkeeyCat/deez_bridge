@@ -85,10 +85,8 @@ func (d *Discord) HandleMessage(msg message.Message) {
 	switch msg.Type {
 	case message.TypeDefault:
 		d.sendMessage(fmt.Sprintf("<%s> %s", msg.Author, msg.Text))
-		break
 	case message.TypeReply:
 		d.replyToMessage(msg.Offset.Username, msg.Author, msg.Text, int32(msg.Offset.Offset))
-		break
 	default:
 		logger.Logger.Warn(fmt.Sprintf("unknown message type: %d", msg.Type))
 	}

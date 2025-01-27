@@ -58,13 +58,10 @@ func (i *Irc) HandleMessage(msg message.Message) {
 	switch msg.Type {
 	case message.TypeDefault:
 		i.sendMessage(fmt.Sprintf("<%s> %s", msg.Author, msg.Text))
-		break
 	case message.TypeReply:
 		i.sendMessage(fmt.Sprintf("<%s %s~%d> %s", msg.Author, msg.Offset.Username, msg.Offset.Offset, msg.Text))
-		break
 	case message.TypeEdit:
 		i.sendMessage(fmt.Sprintf("<%s~%d> %s", msg.Author, msg.Offset.Offset, msg.Text))
-		break
 	case message.TypeReaction:
 		var content string
 
@@ -77,14 +74,13 @@ func (i *Irc) HandleMessage(msg message.Message) {
 		}
 
 		i.sendMessage(content)
-		break
 	default:
 		logger.Logger.Warn(fmt.Sprintf("unknown message type: %d", msg.Type))
 	}
 }
 
 func (i *Irc) sendMessage(message string) {
-	i.connection.Privmsgf(channel, message)
+	i.connection.Privmsg(channel, message)
 }
 
 func (i *Irc) onMessage(event *irc.Event) {

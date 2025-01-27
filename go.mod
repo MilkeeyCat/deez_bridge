@@ -1,6 +1,6 @@
 module github.com/MilkeeyCat/deez_bridge
 
-go 1.21.5
+go 1.23.5
 
 require (
 	github.com/bwmarrin/discordgo v0.27.1

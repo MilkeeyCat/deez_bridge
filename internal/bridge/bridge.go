@@ -15,13 +15,11 @@ type Bridge struct {
 func NewBridge() Bridge {
 	messageChan := make(chan message.Message)
 
-	bridge := Bridge{
+	return Bridge{
 		irc:     irc.NewIrc(messageChan),
 		discord: discord.NewDiscord(messageChan),
 		message: messageChan,
 	}
-
-	return bridge
 }
 
 func (b *Bridge) Open() {
