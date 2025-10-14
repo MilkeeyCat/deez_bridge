@@ -65,11 +65,12 @@ func (i *Irc) HandleMessage(msg message.Message) {
 	case message.TypeReaction:
 		var content string
 
-		if msg.Reaction.Type == message.ReactionTypeAdded {
+		switch msg.Reaction.Type {
+		case message.ReactionTypeAdded:
 			content = fmt.Sprintf("%s reacted with %s to %s~%d", msg.Author, msg.Reaction.EmojiName, msg.Offset.Username, msg.Offset.Offset)
-		} else if msg.Reaction.Type == message.ReactionTypeRemoved {
+		case message.ReactionTypeRemoved:
 			content = fmt.Sprintf("%s removed reaction %s from %s~%d", msg.Author, msg.Reaction.EmojiName, msg.Offset.Username, msg.Offset.Offset)
-		} else {
+		default:
 			logger.Logger.Warn(fmt.Sprintf("unknown reaction type: %d", msg.Reaction.Type))
 		}
 

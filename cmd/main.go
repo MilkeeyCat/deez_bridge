@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -10,8 +11,10 @@ import (
 )
 
 func main() {
-	godotenv.Load(".dev.env", ".env")
 	logger.SetupLogger("./mumbo_jumbo.logs")
+	if err := godotenv.Load(".dev.env", ".env"); err != nil {
+		logger.Fatal(fmt.Sprintf("failed to load env vars: %v", err.Error()))
+	}
 
 	bridge := bridge.NewBridge()
 	bridge.Open()

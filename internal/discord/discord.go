@@ -121,7 +121,7 @@ func (d *Discord) onMessage(session *discordgo.Session, msg *discordgo.MessageCr
 		)
 		d.messages.push(author, Message{
 			content:   content,
-			messageId: msg.Message.ID,
+			messageId: msg.ID,
 		})
 	} else if session.State.User.ID != msg.Author.ID && msg.ChannelID == channelId && msg.Type == discordgo.MessageTypeReply {
 		d.onReply(session, msg)
@@ -153,7 +153,7 @@ func (d *Discord) onReply(session *discordgo.Session, msg *discordgo.MessageCrea
 	)
 	d.messages.push(from, Message{
 		content:   content,
-		messageId: msg.Message.ID,
+		messageId: msg.ID,
 	})
 }
 

@@ -31,9 +31,10 @@ func (b *Bridge) Open() {
 
 func (b *Bridge) Run() {
 	for msg := range b.message {
-		if msg.Target == message.TargetDiscord {
+		switch msg.Target {
+		case message.TargetDiscord:
 			b.discord.HandleMessage(msg)
-		} else if msg.Target == message.TargetIrc {
+		case message.TargetIrc:
 			b.irc.HandleMessage(msg)
 		}
 	}
